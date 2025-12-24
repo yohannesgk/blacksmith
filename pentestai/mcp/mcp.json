@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    
+    "mcp-code-interpreter": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-v",
+        "/data/code-interpreter:/data/code-interpreter",
+        "mcp/mcp-code-interpreter"
+      ],
+      "transport": "stdio"
+    },
+    
+    "playwright": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "mcp/playwright"
+      ],
+      "transport": "stdio"
+    }
+}
+}
