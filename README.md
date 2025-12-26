@@ -264,11 +264,7 @@ cd blacksmithAI/blacksmithAI
 uv add vllm
 uv add huggingface_hub
 
-# if you don't have huggingface cli
-pip install huggingface-cli
-
-# login to hugging face if required
-huggingface-cli login
+uv run hf auth login #if not logged in
 ```
 
 ### Serve
@@ -601,6 +597,8 @@ cd blacksmithAI && make start-cli
 Follow the prompts to initiate penetration testing tasks.
 
 ### Option 2: Web UI
+
+![UI](ui.png)
 
 Access a modern, user-friendly interface for managing penetration tests.
 
