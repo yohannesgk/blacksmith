@@ -1,5 +1,7 @@
 <div align="center">
 
+![blacksmith_cli](blacksmith.svg)
+
 # BlacksmithAI
 
 **[OPEN-SOURCE] AI-Powered Penetration Testing Framework**
