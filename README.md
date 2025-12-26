@@ -287,7 +287,7 @@ vllm serve mistralai/Devstral-2-123B-Instruct-2512 \
 ### Step 1: Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/yohannesgk/blacksmith.git
 cd blacksmithAI/blacksmithAI
 ```
 
