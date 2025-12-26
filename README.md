@@ -254,19 +254,19 @@ docker --version
 docker compose version
 ```
 
-## In addition if using vllm
+## vLLM setup
 
-we need to install and setup vllm as well
+[OPTIONAL] if you want to use vLLM local models
 
-# setup vLLM
+### setup vLLM
 cd blacksmithAI/blacksmithAI
 uv add vllm --torch-backend=auto
 uv add huggingface_hub
 
-# if you don't have huggingface cli
+### if you don't have huggingface cli
 pip install huggingface-cli
 
-# login to hugging face if required
+### login to hugging face if required
 huggingface-cli login
 
 ### Serve
@@ -277,7 +277,7 @@ vllm serve mistralai/Devstral-2-123B-Instruct-2512 \
   --port 8000 \
   --max-model-len 8192 \
   --gpu-memory-utilization 0.75
-
+```
 ---
 
 ## Installation
