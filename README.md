@@ -919,7 +919,7 @@ You may choose which license to comply with when you use the code.
 ### Support
 
 - **Issues**: Report bugs and feature requests on GitHub
-- **Discussions**: Join our community discussions
+- **Discussions**: Join our community discussions [discord](https://discord.gg/HJwAX5rB)
 - **Documentation**: Check our Wiki for additional resources
 
 ---
