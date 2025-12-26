@@ -256,18 +256,20 @@ docker compose version
 
 ## vLLM setup
 
-[OPTIONAL] if you want to use vLLM local models
+if you want to use vLLM local models
 
 ### setup vLLM
+```
 cd blacksmithAI/blacksmithAI
 uv add vllm --torch-backend=auto
 uv add huggingface_hub
 
-### if you don't have huggingface cli
+# if you don't have huggingface cli
 pip install huggingface-cli
 
-### login to hugging face if required
+# login to hugging face if required
 huggingface-cli login
+```
 
 ### Serve
 
@@ -511,6 +513,39 @@ Edit `blacksmithAI/config.json` to configure LLM providers and models.
   }
 }
 ```
+
+**you can support for more providers like openai, claude,...and many more. by simply editing config.json and adding api key to .env**
+```
+for example if you want to add support for openai you can add this to providers in config.json:
+
+   "openai": {
+      "base_url": "....",
+      "default_model": "gpt-5-mini",
+      "default_embedding_model": "text-embedding-3-small",
+      "default_model_config": {
+        "context_size": 200000,
+        "max_retries": 3,
+        "stream_usage": true,
+        "max_tokens": null
+      },
+      "default_embedding_model_config": {
+        "max_retries": 3,
+        "embedding_ctx_length": 8191
+      }
+    }
+
+since the name of the provider here is set to `openai` you need to add OPENAI_API_KEY=**** to env file. so uppercase(provider_name)+API_KEY to env.
+set the new provider to default by modifying: 
+
+	  "defaults": {
+	    "provider": "openai"
+	  },
+
+Now everything is configured for openai.
+
+```
+
+**you can easily scaleup with the above method and add more support.**
 
 #### Configuration Options
 
@@ -862,8 +897,6 @@ For more detailed information, refer to:
 ### Contributing
 
 Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
-
-### License
 
 ### License
 
