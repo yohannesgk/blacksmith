@@ -60,7 +60,7 @@ embed-tools: ## Embed tool documentation for AI agents
 # VLLM Targets
 vllm-install: ## Install VLLM for local LLM support
 	@echo "$(BLUE)Installing VLLM...$(NC)"
-	cd blacksmithAI && uv add vllm --torch-backend=auto
+	cd blacksmithAI && uv add vllm
 	cd blacksmithAI && uv add huggingface_hub
 	@echo "$(GREEN)✓ VLLM installed$(NC)"
 	@echo "$(YELLOW)Next: Run 'make vllm-serve' to start the VLLM server$(NC)"
@@ -97,7 +97,7 @@ start-ui: docker-up ## Start BlacksmithAI Web UI (requires 3 terminals)
 	@echo ""
 	@echo "$(YELLOW)Terminal 1:$(NC) cd blacksmithAI && docker compose up -d"
 	@echo "$(YELLOW)Terminal 2:$(NC) cd frontend && pnpm build && pnpm start"
-	@echo "$(YELLOW)Terminal 3:$(NC) cd blacksmithAI && langgraph dev"
+	@echo "$(YELLOW)Terminal 3:$(NC) cd blacksmithAI && uv run langgraph dev"
 	@echo ""
 	@echo "$(GREEN)Then access http://localhost:3000$(NC)"
 
@@ -119,7 +119,7 @@ start-all: ## Quick start - runs CLI mode (assumes setup is done)
 # Development Targets
 dev-ui: docker-up ## Start LangGraph dev server
 	@echo "$(BLUE)Starting LangGraph dev server...$(NC)"
-	cd blacksmithAI && langgraph dev
+	cd blacksmithAI && uv run langgraph dev
 
 dev-frontend: ## Start frontend development server
 	@echo "$(BLUE)Starting frontend development server...$(NC)"
@@ -176,7 +176,7 @@ quickstart: ## Display quick start guide
 	@echo "$(GREEN)3. Start Web UI Mode (requires 3 terminals):$(NC)"
 	@echo "   Terminal 1: make docker-up"
 	@echo "   Terminal 2: cd frontend && pnpm build && pnpm start"
-	@echo "   Terminal 3: cd blacksmithAI && langgraph dev"
+	@echo "   Terminal 3: cd blacksmithAI && uv run langgraph dev"
 	@echo "   # Open http://localhost:3000"
 	@echo ""
 	@echo "$(GREEN)4. Using VLLM (Local LLM):$(NC)"

@@ -261,7 +261,7 @@ if you want to use vLLM local models
 ### setup vLLM
 ```
 cd blacksmithAI/blacksmithAI
-uv add vllm --torch-backend=auto
+uv add vllm
 uv add huggingface_hub
 
 # if you don't have huggingface cli
