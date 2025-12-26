@@ -584,6 +584,12 @@ or
 cd blacksmithAI/blacksmithAI
 docker compose up -d
 
+```
+
+---
+
+```
+
 # Run BlacksmithAI
 cd blacksmithAI/blacksmithAI && uv run main.py
 
