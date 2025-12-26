@@ -377,7 +377,7 @@ make docker-up
 cd frontend && pnpm build && pnpm start
 
 # Terminal 3: Start LangGraph dev server
-cd blacksmithAI && langgraph dev
+cd blacksmithAI && uv run langgraph dev
 ```
 
 Then access: **http://localhost:3000**
@@ -435,7 +435,7 @@ make start-cli
 # Start Web UI (3 terminals)
 make docker-up
 cd frontend && pnpm build && pnpm start
-cd blacksmithAI && langgraph dev
+cd blacksmithAI && uv run langgraph dev
 
 # Stop everything
 make stop
@@ -621,7 +621,7 @@ pnpm start
 
 # Terminal 3: Start LangGraph development server
 cd blacksmithAI/blacksmithAI
-langgraph dev
+uv run langgraph dev
 ```
 
 Access the UI at: **http://localhost:3000**
