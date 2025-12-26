@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  mini-kali-slim:
+    image: yohannesgk/mini-kali-slim:latest
+    container_name: shell-executor
+    ports:
+      - "9756:9756"
+    restart: unless-stopped

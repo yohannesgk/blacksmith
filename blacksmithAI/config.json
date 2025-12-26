@@ -1,0 +1,61 @@
+{
+    "defaults":{
+        "provider": "openrouter"
+    },
+    "provider":{
+        "openrouter": {
+            "base_url": "https://openrouter.ai/api/v1",
+            "default_model": "mistralai/devstral-2512:free",
+            "default_embedding_model": "openai/text-embedding-3-small",
+            "default_model_config": {
+                "context_size": 200000,
+                "max_retries": 3,
+                "stream_usage": true,
+                "max_tokens": null
+            },
+            "default_embedding_model_config": {
+                "max_retries": 3
+            }
+        },
+        "vllm": {
+            "base_url": "http://localhost:8000/v1/chat/completions",
+            "default_model": "mistralai/devstral-2512:free",
+            "default_embedding_model": "openai/text-embedding-3-small",
+            "default_model_config": {
+                "context_size": 200000,
+                "max_retries": 3,
+                "stream_usage": true,
+                "max_tokens": null
+            },
+            "default_embedding_model_config": {
+                "max_retries": 3
+            }
+        }
+    },
+    "tools":{
+
+        "reconnaissance": [
+            "whois", "dnsutils (dig/nslookup)", "dnsrecon",
+            "assetfinder", "findomain", "subfinder"
+        ],
+        "scanning_enumeration": [
+            "nmap", "masscan", "enum4linux-ng",
+            "gobuster", "wpscan", "fingerprintx"
+        ],
+        "vulnerability_mapping": [
+            "nuclei", "sslscan"
+        ],
+        "exploitation": [
+            "sqlmap", "hydra", "medusa", "ncrack"
+        ],
+        "post_exploitation": [
+            "netcat-traditional", "socat", "hping3",
+            "impacket CLIs (psexec, smbclient, secretsdump)"
+        ],
+        "general": [
+            "python3", "pip3", "Go toolchain (go install tools)", 
+            "build-essential", "gcc", "gdb", "strace",
+            "flask", "httpie", "curl", "openssh-client"
+        ]
+    }
+}

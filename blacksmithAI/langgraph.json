@@ -1,0 +1,12 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "Orchestrator": "./main.py:main_agent",
+    "ReconnaissanceAgent": "./main.py:reconnaissance",
+    "vulnurabilityMappingAgent": "./main.py:vulnurability_mapping",
+    "PostExploitAgent": "./main.py:post_exploit",
+    "ScannerEnumeratorAgent": "./main.py:scan_enum",
+    "ExploitAgent": "./main.py:exploit"
+  },
+  "env": ".env"
+}
