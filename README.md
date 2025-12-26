@@ -1,6 +1,6 @@
 <div align="center">
 
-![blacksmith_cli](blacksmith.svg)
+![blacksmith_logo](blacksmith.png)
 
 # BlacksmithAI
 
