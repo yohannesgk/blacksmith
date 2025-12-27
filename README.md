@@ -559,14 +559,6 @@ Now everything is configured for openai.
 
 ---
 
-### embed documentatation
-
-You need to embed tool documentation for the AI agents to use as reference
-
-```bash
-uv run blacksmithAI/blacksmithAI/update_tool_documentation.py
-```
-
 ## Usage
 
 ### Option 1: Terminal Interface (CLI)
