@@ -4,6 +4,8 @@
 
 # BlacksmithAI
 
+<a href="https://www.producthunt.com/products/github-252?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-blacksmith-2" target="_blank" rel="noopener noreferrer"><img alt="Blacksmith - AI powered penetration testing | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1054860&amp;theme=light&amp;t=1766829263627"></a>
+
 **[OPEN-SOURCE] AI-Powered Penetration Testing Framework**
 
 An intelligent multi-agent system for automated security assessment and penetration testing.
