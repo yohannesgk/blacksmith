@@ -36,12 +36,7 @@ An intelligent multi-agent system for automated security assessment and penetrat
 
 BlacksmithAI is an **opensource** advanced penetration testing framework that leverages multiple AI agents to automate security assessments. The system orchestrates specialized agents through a complete penetration testing lifecycle—from reconnaissance to post-exploitation—using professional security tools in a controlled environment.
 
-<iframe width="560" height="315" 
-	src="https://www.youtube.com/embed/vIUOOi3VB6Y?si=wfh-UCsLVb3wrTZK" 
-	title="Blacksmith" frameborder="0" 
-	allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-	referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
-</iframe>
+[![Blacksmith - Forging a hammer](https://img.youtube.com/vi/vIUOOi3VB6Y/maxresdefault.jpg)](https://www.youtube.com/watch?v=vIUOOi3VB6Y)
 
 ### Key Features
 
