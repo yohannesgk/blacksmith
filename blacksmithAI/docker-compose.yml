@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   mini-kali-slim:
-    image: mini-kali-slim:latest
+    image: yohannesgk/mini-kali-slim:latest
     container_name: shell-executor
     ports:
       - "9756:9756"
