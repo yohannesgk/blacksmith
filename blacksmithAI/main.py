@@ -12,12 +12,21 @@ from langchain.agents.middleware import ToolRetryMiddleware
 from langchain.messages import HumanMessage
 import asyncio
 import time
-from rich import print
-from rich.console import Console
+from rich.console import Console, Group
+from rich.panel import Panel
+from rich.spinner import Spinner
+from rich.text import Text
+from rich.markdown import Markdown
+from rich.live import Live
+from prompt_toolkit import PromptSession, HTML
+from prompt_toolkit.history import FileHistory
 from uuid import uuid4
 from datetime import datetime
 import json
+import sys
 from tools.tools import pentest_shell, shell_documentation
+from prompt_toolkit import PromptSession
+from prompt_toolkit.history import FileHistory
 
 console = Console()
 
@@ -27,7 +36,6 @@ logger.setLevel(logging.INFO)
 delay = 2
 retry = 3
 
-shell_tools = json.load(open("./config.json", "r"))['tools']
 
 instruction = """
 You are an orchestrator agent(master agent) that coordinates multiple specialized sub-agents to perform comprehensive penetration testing on a target system. Your role is to delegate tasks to the appropriate sub-agents based on their expertise, gather their findings, and synthesize a final report.
@@ -112,7 +120,6 @@ class orchestrator_agent:
                             vulnurability_mapping.get_graph(), 
                             pentest_agent.get_graph()],
                 today=datetime.now().strftime("%Y-%m-%d"),
-                #shell_tools=shell_tools,
             checkpointer=memory,
             middleware=[
                 ToolRetryMiddleware(
@@ -132,42 +139,95 @@ main_agent = orchestrator_agent(memory=None).get_agent()
 
 # async wrapper to run the agent
 async def runner(agent, user_input: str, config: dict):
-    full_response = ""
-    async for _, chunk in agent.astream({'messages': [HumanMessage(user_input)]}, config=config, stream_mode=['values']):
-        full_response = chunk['messages'][-1].content
-
-    print("[bold blue]Blacksmith>[/bold blue] ", end='', flush=True)
-    print(full_response, end='', flush=True)
+    full_response_content = ""
+    
+    console.rule("[bold blue]Blacksmith[/bold blue]")
+    
+    # Initial "thinking" state
+    display_group = Group(Panel(Spinner("dots", text="Thinking...", style="yellow"), border_style="blue"))
+    
+    with Live(display_group, refresh_per_second=10, console=console) as live:
+        async for chunk in agent.astream({'messages': [HumanMessage(user_input)]}, config=config, stream_mode='messages'):
+            # LangGraph 'messages' mode yields (BaseMessage, dict) tuples
+            if isinstance(chunk, tuple) and len(chunk) >= 1:
+                msg = chunk[0]
+                if hasattr(msg, "content") and msg.content:
+                    full_response_content += msg.content
+                    live.update(Markdown(full_response_content))
+            # Fallback for other stream modes or direct message objects
+            elif hasattr(chunk, "content") and chunk.content:
+                full_response_content += chunk.content
+                live.update(Markdown(full_response_content))
+    
+    # Final cleanup: The Live display is gone, we print the final rendered Markdown once.
+    if not full_response_content:
+        console.print("[bold red]Error:[/bold red] No response received from agent.")
+    console.rule(style="dim")
 
 def main():
     logger.info("Initializing agents...")
-    time.sleep(delay)
+    # Use the ConfigManager from base.py to ensure config is loaded and validated
+    from agents.base import config_manager # Import the global instance
 
-    # conversation logging
-    convo_id = str(uuid4())[:8]+"-"+datetime.now().strftime("%Y%m%d%H%M%S")
+    # Conversation logging
+    convo_id = str(uuid4())[:8] + "-" + datetime.now().strftime("%Y%m%d%H%M%S")
     config = {'configurable': {'thread_id': f'{convo_id}'}}
 
-    # instantiate the orchestrator agent
-    orchestrator = orchestrator_agent().get_agent()
+    # Instantiate the orchestrator agent
+    try:
+        orchestrator = orchestrator_agent().get_agent()
+        logger.info("Orchestrator agent initialized successfully.")
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] Failed to initialize orchestrator agent: {e}")
+        sys.exit(1)
 
-    logger.info("All agents initialized successfully.")
+    session = PromptSession(history=FileHistory('.blacksmith_history'))
 
-    print("[bold red]----------------------- Wellcome to BlackSmith -----------------------------[/bold red]")
-    print("[bold red]............................................................................[/bold red]")
-    
+    console.print("\n[bold red]----------------------- Welcome to Blacksmith -----------------------------[/bold red]")
+    console.print("[bold red]............................................................................[/bold red]")
+    console.print("[italic]Type /help for commands, /exit to quit.[/italic]\n")
+
     while True:
-
         try:
-            user_input = str(console.input("\n[bold green]User> [/bold green]"))
+            # Use HTML for prompt_toolkit to handle colors correctly
+            user_input = session.prompt(HTML('<style color="green"><b>User&gt; </b></style>'))
+
+            if user_input.startswith('/'):
+                command = user_input.split(' ')[0]
+                if command == '/exit':
+                    console.print("\n[bold red]Exiting...[/bold red]")
+                    break
+                elif command == '/help':
+                    console.print("\n[bold yellow]Available Commands:[/bold yellow]")
+                    console.print("  /help    - Show this help message")
+                    console.print("  /exit    - Exit the application")
+                    console.print("  /clear   - Clear the current conversation history")
+                    console.print("  /reset   - Reset the agent's internal state")
+                elif command == '/clear':
+                    # This clears the display, not the agent's memory
+                    console.clear()
+                    console.print("[bold red]----------------------- Welcome to Blacksmith -----------------------------[/bold red]")
+                    console.print("[bold red]............................................................................[/bold red]")
+                    console.print("Type /help for commands, /exit to quit.\n")
+                elif command == '/reset':
+                    convo_id = str(uuid4())[:8] + "-" + datetime.now().strftime("%Y%m%d%H%M%S")
+                    config = {'configurable': {'thread_id': f'{convo_id}'}}
+                    orchestrator = orchestrator_agent().get_agent()
+                    console.print("[bold yellow]Agent state reset. New conversation started.[/bold yellow]")
+                else:
+                    console.print(f"[bold red]Unknown command:[/bold red] {command}. Type /help for available commands.")
+            elif user_input.strip() == '':
+                continue
+            else:
+                asyncio.run(runner(orchestrator, user_input, config))
+
         except KeyboardInterrupt:
-            print("\n[bold red]exiting...[/bold red]")
-            time.sleep(delay)
+            console.print("\n[bold red]Exiting...[/bold red]")
             break
+        except Exception as e:
+            console.print(f"[bold red]An unexpected error occurred:[/bold red] {e}")
+            logger.exception("Unhandled exception in main loop.")
 
-        if user_input == 'exit':
-            break
-
-        asyncio.run(runner(orchestrator, user_input, config))
 
 if __name__ == "__main__":
     main()

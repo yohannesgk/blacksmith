@@ -3,32 +3,71 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from dotenv import load_dotenv
 import os
 import json
-from openai import RateLimitError
+import sys
+from typing import Optional, Dict, Any
 
-load_dotenv()
+class ConfigManager:
+    """Manages configuration loading and validation for BlacksmithAI."""
+    
+    DEFAULT_CONFIG_PATH = "./config.json"
+    
+    def __init__(self, config_path: str = DEFAULT_CONFIG_PATH):
+        self.config_path = config_path
+        self.config = self._load_config()
+        self.validate_env()
 
-#load configuration
-config = json.load(open("./config.json", "r"))
+    def _load_config(self) -> Dict[str, Any]:
+        if not os.path.exists(self.config_path):
+            print(f"[bold red]Error:[/bold red] Configuration file '{self.config_path}' not found.")
+            print("Please create a config.json file based on the provided example.")
+            sys.exit(1)
+            
+        try:
+            with open(self.config_path, "r") as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"[bold red]Error:[/bold red] Failed to parse '{self.config_path}': {e}")
+            sys.exit(1)
 
-# select provider and model
-default_provider = config['defaults']['provider']
+    def validate_env(self):
+        load_dotenv()
+        provider = self.get_default_provider()
+        key_name = f"{provider.upper()}_API_KEY"
+        if not os.getenv(key_name):
+            print(f"[bold yellow]Warning:[/bold yellow] {key_name} is not set in environment variables.")
 
-base_url = config['provider'][f'{default_provider}']['base_url'] or 'https://openrouter.ai/api/v1' # default openrouter
-default_model = config['provider'][f'{default_provider}']['default_model'] or "mistralai/devstral-2512"
-context_size = config['provider'][f'{default_provider}']['default_model_config']['context_size'] or 200000
-max_retries = config['provider'][f'{default_provider}']['default_model_config']['max_retries'] or 3
-stream_usage = config['provider'][f'{default_provider}']['default_model_config']['stream_usage'] or True
-max_tokens = config['provider'][f'{default_provider}']['default_model_config']['max_tokens'] or None
-embedding_model = config['provider'][f'{default_provider}']['default_embedding_model'] or "openai/text-embedding-3-small"
+    def get_default_provider(self) -> str:
+        return self.config.get("defaults", {}).get("provider", "openrouter")
 
-# api key
-key = f'{default_provider.upper()}_API_KEY'
-api_key = os.getenv(key, "") # get key from env
+    def get_provider_config(self, provider: Optional[str] = None) -> Dict[str, Any]:
+        provider = provider or self.get_default_provider()
+        return self.config.get("provider", {}).get(provider, {})
 
+    def get_api_key(self, provider: Optional[str] = None) -> str:
+        provider = provider or self.get_default_provider()
+        return os.getenv(f"{provider.upper()}_API_KEY", "")
+
+# Initialize global config manager
+config_manager = ConfigManager()
+
+# Select provider and model
+default_provider = config_manager.get_default_provider()
+provider_config = config_manager.get_provider_config(default_provider)
+
+base_url = provider_config.get("base_url", "https://openrouter.ai/api/v1")
+default_model = provider_config.get("default_model", "mistralai/devstral-2512")
+model_config = provider_config.get("default_model_config", {})
+
+context_size = model_config.get("context_size", 200000)
+max_retries = model_config.get("max_retries", 3)
+stream_usage = model_config.get("stream_usage", True)
+max_tokens = model_config.get("max_tokens")
+embedding_model = provider_config.get("default_embedding_model", "openai/text-embedding-3-small")
+
+api_key = config_manager.get_api_key(default_provider)
 
 class init_model:
     def __init__(self, reasoning_effort=None, temperature=0):
-        # Disable internal retries to avoid conflicts, use with_retry instead
         self.model = ChatOpenAI(
             model=default_model,
             api_key=api_key,
@@ -45,9 +84,7 @@ class init_model:
         return self.model
     
 class init_embedding_model():
-    
     def __init__(self):
-
         self.model = OpenAIEmbeddings(
             model=embedding_model,
             api_key=api_key,
@@ -57,5 +94,3 @@ class init_embedding_model():
 
     def get_model(self):
         return self.model
-    
-    

@@ -8,7 +8,9 @@ todo
 outputs
 __pycache__/
 *$py.class
-
+.agents/
+.skills/
+.claude/
 # frontend
 # Logs
 logs
@@ -41,3 +43,10 @@ dist-ssr
 .worktrees/
 next-env.d.ts
 
+# skills and agnets
+
+skills-lock.json
+
+# store
+
+blacksmithAI/store/
