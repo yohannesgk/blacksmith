@@ -2,7 +2,18 @@
 
 ![blacksmith_logo](blacksmith.png)
 
+<p align="center">
+  <img src="blacksmithAI/public/banner.png" alt="Hermes Agent" width="100%">
+</p>
+
 # BlacksmithAI
+
+<p align="center">
+  <a href="https://bs.kahanlabs.com/docs/"><img src="https://img.shields.io/badge/docs.blacksmith.com-FFD700?style=for-the-badge" alt="Documentation"></a>
+  <a href="https://discord.gg/y9Rfag3cVk"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://opensource.org/licenses/GPL-3.0"><img src="https://img.shields.io/badge/License-GPL‑3.0-green?style=for-the-badge" alt="License: GPL‑3.0"></a>
+  <a href="https://www.linkedin.com/in/yohannes-gebrekirstos/"><img src="https://img.shields.io/badge/Built%20by-Yohannes%20Gebrekirstos-blueviolet?style=for-the-badge" alt="Built by Yohannes Gebrekirstos"></a>
+</p>
 
 <a href="https://www.producthunt.com/products/github-252?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-blacksmith-2" target="_blank" rel="noopener noreferrer"><img alt="Blacksmith - AI powered penetration testing | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1054860&amp;theme=light&amp;t=1766829263627"></a>
 
@@ -36,7 +47,7 @@ A hosted version is available for quick testing without local setup. [Blacksmith
 
 ## Overview
 
-BlacksmithAI is an **opensource** advanced penetration testing framework that leverages multiple AI agents to automate security assessments. The system orchestrates specialized agents through a complete penetration testing lifecycle—from reconnaissance to post-exploitation—using professional security tools in a controlled environment.
+BlacksmithAI is an **opensource** advanced penetration testing framework that leverages multiple AI agents to automate security assessments. The system orchestrates specialized agents through a complete penetration testing lifecycle from reconnaissance to post-exploitation using professional security tools in a controlled environment.
 
 [![Blacksmith - Forging a hammer](https://img.youtube.com/vi/vIUOOi3VB6Y/maxresdefault.jpg)](https://www.youtube.com/watch?v=vIUOOi3VB6Y)
 
@@ -44,16 +55,16 @@ BlacksmithAI is an **opensource** advanced penetration testing framework that le
 
 - **Multi-Agent Architecture**: Specialized agents for each phase of penetration testing
 - **Professional Tooling**: Pre-configured Docker image with industry-standard security tools
-- **Flexible LLM Providers**: Support for OpenRouter, VLLM, and custom providers
+- **Flexible LLM Providers**: Supports almost every model and provider e.g. openai, gemini, openrouter, and local models
 - **Web & Terminal Interfaces**: Choose between a modern UI or CLI interaction
 - **Automated Reporting**: Generates comprehensive security reports with evidence
-- **Safe & Controlled**: Non-interactive CLI tools designed for AI agent execution
+- **Safe & Controlled**: runs on a controlled docker environment
 
 ### Use Cases
 
+- Professional penetration testing
 - Automated security assessments
 - Continuous security monitoring
-- Educational penetration testing
 - Vulnerability discovery and validation
 - Security research and development
 
@@ -61,7 +72,7 @@ BlacksmithAI is an **opensource** advanced penetration testing framework that le
 
 ## Architecture
 
-BlacksmithAI uses a hierarchical multi-agent system.
+BlacksmithAI uses a hierarchical multi-agent system. 
 
 ### Agent Hierarchy
 
@@ -77,7 +88,9 @@ BlacksmithAI uses a hierarchical multi-agent system.
    - **Exploit Agent**: Proof-of-concept exploitation
    - **Post-Exploit Agent**: Impact assessment and pivot analysis
 
-Each agent has access to specific tools tailored to its role, ensuring efficient and focused operations.
+> Each sub-agent maintains its own mission planning creating local autonomy, while the Orchestrator retains top-level process control through evaluation
+
+> Each sub-agent has access to specific tools tailored to its role, ensuring efficient and focused operations.
 
 ---
 
@@ -86,16 +99,16 @@ Each agent has access to specific tools tailored to its role, ensuring efficient
 ### System Requirements
 
 - **Operating System**: Linux (recommended), macOS, or Windows with WSL2
-- **RAM**: Minimum 4GB (8GB recommended)
+- **RAM**: Minimum 2GB (4GB recommended)
 - **Disk Space**: 2GB+ including Docker images
 - **Docker**: 20.10+ with Docker Compose
-- **Python**: 3.12+ (managed via uv)
+- **Python**: 3.12 (via uv - recommended)
 
 ---
 
 ## Software Dependencies
 
-We rely on the following tools:
+BlacksmithAI relies on the following tools:
 
 ```bash
 # Python package & environment manager
@@ -140,12 +153,14 @@ uv --version
 
 Notes:
 
-* Standalone script is recommended for full functionality and auto-updates. ([Astral Docs][2])
+* Standalone script is recommended for full functionality and auto-updates.
 * On Windows use PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
+
+> Read uv docs for detailed setup - https://docs.astral.sh/uv/
 
 ---
 
@@ -184,9 +199,9 @@ sudo usermod -aG docker $USER
 
 ---
 
-## 3. Node.js 18+
+## 3. Node.js 18+ (OPTIONAL)
 
-We use Node.js for frontend tooling. Node 18+ is required for modern `pnpm` and ecosystem compatibility. ([docs.pyloid.com][3])
+We use Node.js for frontend tooling. Node 18+ is required for modern `pnpm` and ecosystem compatibility.
 
 ### Ubuntu / Debian
 
@@ -275,6 +290,8 @@ uv run hf auth login #if not logged in
 
 ### Serve
 
+> e.g.
+
 ```bash
 vllm serve mistralai/Devstral-2-123B-Instruct-2512 \
   --host 0.0.0.0 \
@@ -358,19 +375,22 @@ nano blacksmithAI/config.json
 
 ```bash
 make start-cli 
+```
 
-or 
+**Starts the mini-kali Docker container and Launches the CLI interface**
 
+
+> OR
+
+```bash
 uv run main.py
 ```
 
-This command:
-- Starts the mini-kali Docker container
-- Launches the CLI interface
+**Just launches the CLI interface**
 
 #### Web UI Mode
 
-The Web UI requires multiple terminals. Run these commands in separate terminals:
+Run these commands in separate terminals:
 
 ```bash
 # Terminal 1: Start Docker container
@@ -379,12 +399,10 @@ make docker-up
 # Terminal 2: Start frontend
 cd frontend && pnpm build && pnpm start
 
-# Terminal 3: Start LangGraph dev server
-cd blacksmithAI && uv run langgraph dev
-
-or
-
-cd blacksmithAI && uv run langgraph up
+# Terminal 3: Start LangGraph server
+cd blacksmithAI && uv run langgraph up # production server
+>or
+cd blacksmithAI && uv run langgraph dev # dev server
 ```
 
 Then access: **http://localhost:3000**
@@ -486,8 +504,8 @@ Edit `blacksmithAI/config.json` to configure LLM providers and models.
   },
   "providers": {
     "openrouter": {
-      "base_url": "https://openrouter.ai/api/v1/chat/completions",
-      "default_model": "mistralai/devstral-2512:free",
+      "base_url": "https://openrouter.ai/api/v1/chat/completions", # inference url
+      "default_model": "mistralai/devstral-2512:free", # model name
       "default_embedding_model": "openai/text-embedding-3-small",
       "default_model_config": {
         "context_size": 200000,
@@ -519,12 +537,12 @@ Edit `blacksmithAI/config.json` to configure LLM providers and models.
 }
 ```
 
-**you can support for more providers like openai, claude,...and many more. by simply editing config.json and adding api key to .env**
+**you can add support for more providers like openai, claude,...and many more. by simply editing config.json and adding api key to .env**
 ```
 for example if you want to add support for openai you can add this to providers in config.json:
 
    "openai": {
-      "base_url": "....",
+      "base_url": "https://api.openai.com/v1/chat/completions",
       "default_model": "gpt-5-mini",
       "default_embedding_model": "text-embedding-3-small",
       "default_model_config": {
@@ -557,10 +575,10 @@ Now everything is configured for openai.
 - **`defaults.provider`**: Default LLM provider to use
 - **`base_url`**: API endpoint for the provider
 - **`default_model`**: LLM model identifier
-- **`default_embedding_model`**: Model for embeddings (used in vector DB)
+- **`default_embedding_model`**: Model for embeddings
 - **`context_size`**: Context window size of the selected model(required for summerization, to prevent context window overflow)
 - **`max_retries`**: Number of retry attempts for failed requests
-- **`max_tokens`**: Maximum tokens in responses (null = model default)
+- **`max_tokens`**: Maximum tokens in responses (null = model default) - helps manage token costs
 
 ---
 
@@ -570,7 +588,7 @@ Now everything is configured for openai.
 
 Interact directly through the terminal with full agent control.
 
-![blacksmith_cli](example_sh.png)
+![blacksmith_cli](blacksmithAI/public/cli.png)
 
 ```bash
 # Start mini-kali Docker container
@@ -635,85 +653,9 @@ A hosted version is available for quick testing without local setup.
 
 ## Tools & Capabilities
 
-BlacksmithAI provides access to professional penetration testing tools through the mini-kali Docker container. All tools are designed for non-interactive, stdin/stdout execution—ideal for AI agents.
+BlacksmithAI provides access to professional penetration testing tools through the mini-kali Docker container. All tools are designed for non-interactive, stdin/stdout execution ideal for AI agents.
 
-### Reconnaissance Tools
-
-Build the attack surface map through passive and active information gathering.
-
-| Tool | Purpose |
-|------|---------|
-| `assetfinder` | Discover subdomains and assets |
-| `subfinder` | Subdomain enumeration |
-| `whois` | Domain registration information |
-| `dig` | DNS record lookup |
-| `nslookup` | DNS query tool |
-| `hping3` | Network scanning and packet analysis |
-| `dnsrecon` | DNS enumeration and reconnaissance |
-
-### Scanning & Enumeration
-
-Deep dive into discovered targets to identify services and vulnerabilities.
-
-| Tool | Purpose |
-|------|---------|
-| `nmap` | Network mapper and port scanner |
-| `masscan` | High-speed port scanner |
-| `enum4linux-ng` | SMB/Windows enumeration |
-| `nikto` | Web server scanner |
-| `whatweb` | Web technology identification |
-| `fingerprintx` | Service fingerprinting |
-| `gobuster` | Directory and DNS brute-forcing |
-| `wpscan` | WordPress vulnerability scanner |
-
-### Vulnerability Analysis
-
-Map services to known vulnerabilities and assess security risks.
-
-| Tool | Purpose |
-|------|---------|
-| `nuclei` | Fast and customizable vulnerability scanner |
-| `sslscan` | SSL/TLS configuration analyzer |
-
-### Exploitation Tools
-
-Execute controlled exploits and validate vulnerabilities.
-
-| Tool | Purpose |
-|------|---------|
-| `sqlmap` | Automated SQL injection |
-| `hydra` | Password brute-forcing |
-| `medusa` | Parallel network login auditor |
-| `ncrack` | Network authentication cracking |
-| `python/go/perl/ruby` | Custom exploit scripting |
-
-### Post-Exploitation
-
-Assess impact and identify pivot opportunities after successful exploitation.
-
-| Tool | Purpose |
-|------|---------|
-| `netcat` | Network debugging and data transfer |
-| `socat` | Multi-purpose relay |
-| `ssh -D` | SOCKS proxy tunneling |
-| `impacket` | Windows protocol manipulation (psexec, secretsdump) |
-
-### General Utilities
-
-Support tools for various tasks.
-
-| Tool | Purpose |
-|------|---------|
-| `curl` | Data transfer with URL syntax |
-| `httpie` | User-friendly HTTP client |
-| `trufflehog` | Secret and credential scanner |
-
-### Upcoming Features
-
-- **Web Browser**: MCP-Playwright for automated web browsing
-- **Code Interpreter**: MCP code interpreter for Python execution
-- **Exploits Database**: Integration with Exploit-DB, or other providers for exploit scripts
-- **Interactive Tools**: Support for Metasploit and other interactive frameworks
+**[Tools Documentation](blacksmithAI/tools.md)**: Complete list of available tools and their capabilities
 
 ---
 
@@ -822,7 +764,7 @@ Orchestrator → Final Report
 docker ps
 
 # View container logs
-docker logs mini-kali-slim
+docker logs [container-name]
 ```
 
 **Port conflicts**
@@ -833,18 +775,6 @@ lsof -i :9756
 # Use a different port
 docker run -i --rm -p 9757:9756 mini-kali-slim -d
 ```
-
-### LLM Provider Issues
-
-**OpenRouter connection errors**
-- Verify API key in `.env` file
-- Check OpenRouter status: https://status.openrouter.ai/
-- Ensure internet connectivity
-
-**VLLM connection errors**
-- Verify VLLM server is running: `curl http://localhost:8000/v1/models`
-- Check port configuration in `config.json`
-- Ensure sufficient GPU/memory for VLLM
 
 ### Frontend Issues
 
@@ -858,7 +788,7 @@ pnpm build
 ```
 
 **UI not connecting**
-- Ensure LangGraph dev server is running
+- Ensure LangGraph server is running
 - Check browser console for errors
 - Verify port 3000 is not in use
 
@@ -867,11 +797,6 @@ pnpm build
 **Slow responses**
 - Switch to faster LLM model
 - Check system resources (RAM/CPU)
-
-**Agent stuck in loop**
-- Reduce task complexity
-- Check tool documentation
-- Review agent logs for errors
 
 ### Common Errors
 
@@ -901,11 +826,18 @@ For more detailed information, refer to:
 
 Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
 
+### Upcoming Features
+
+- **Web Browser**: allow agents to browse the web
+- **Code Interpreter**: dedicated container for script execution
+- **Exploits Database**: Integration with exploit databases
+- **Interactive Tools**: Support for Metasploit and other interactive frameworks
+
 ### License
 
 This project is **open-source**:
 
-The source code is available under the **[GPL‑3.0‑only](https://opensource.org/licenses/GPL-3.0)** open‑source license for community use, modification, and redistribution (see `LICENSE-GPL.txt`).
+The source code is available under the **[GPL‑3.0‑only](https://opensource.org/licenses/GPL-3.0)** open‑source license for community use, modification, and redistribution (see `[LICENSE-GPL](LICENSE-GPL.txt)`).
 
 For commercial use under different terms (for example, closed‑source distribution or integration without copyleft obligations), please contact us to obtain a **commercial license**.
 

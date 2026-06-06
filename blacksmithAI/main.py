@@ -237,6 +237,10 @@ def _format_tool_status(tool_name: str, tool_args) -> str:
 
     return f"🔧 Running tool: {tool_name} {args_text}"
 
+def _is_tool_message(msg) -> bool:
+    """Return True for tool messages that should not be treated as assistant narration."""
+    return msg.__class__.__name__ == "ToolMessage" or getattr(msg, "type", "") == "tool"
+
 # async wrapper to run the agent
 async def runner(agent, user_input: str, config: dict):
     full_response_content = ""
@@ -297,10 +301,14 @@ async def runner(agent, user_input: str, config: dict):
                 msg = chunk
                 metadata = {}
                 
-            # Filter standard text content streaming - ONLY show master orchestrator output to prevent duplicates!
-            is_orchestrator = True  # Safe fallback if metadata is empty
+            msg_class = msg.__class__.__name__
+            is_tool_message = _is_tool_message(msg)
+            is_orchestrator = False
             if metadata:
                 is_orchestrator = metadata.get("lc_agent_name") == "orchestrator_agent"
+            elif not is_tool_message:
+                # Only allow untagged non-tool assistant text through as a fallback.
+                is_orchestrator = msg_class in {"AIMessage", "AIMessageChunk"}
             
             # Update active node status from metadata
             if metadata:
@@ -342,8 +350,7 @@ async def runner(agent, user_input: str, config: dict):
                 live.update(render_display())
             
             # Check for ToolMessage (meaning tool call finished)
-            msg_class = msg.__class__.__name__
-            if msg_class == "ToolMessage" or getattr(msg, "type", "") == "tool":
+            if is_tool_message:
                 t_name = getattr(msg, "name", "tool")
                 status_line = f"✅ [bold green]Tool completed:[/bold green] [bold cyan]{t_name}[/bold cyan]"
                 if status_line not in tool_calls_status:
@@ -354,8 +361,9 @@ async def runner(agent, user_input: str, config: dict):
                     extracted_todo = format_todo_list(msg.content)
                     if extracted_todo:
                         active_checklist = extracted_todo
-                        
+
                 live.update(render_display())
+                continue
                 
             # Accumulate content ONLY for the orchestrator to keep output clean and avoid duplicates
             if is_orchestrator and hasattr(msg, "content") and msg.content:
