@@ -3,7 +3,7 @@
 ![blacksmith_logo](blacksmith.png)
 
 <p align="center">
-  <img src="blacksmithAI/public/banner.png" alt="Hermes Agent" width="100%">
+  <img src="blacksmithAI/public/cli.png" alt="Blacksmith AI" width="100%">
 </p>
 
 # BlacksmithAI
