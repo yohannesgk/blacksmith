@@ -138,30 +138,236 @@ class orchestrator_agent:
 main_agent = orchestrator_agent(memory=None).get_agent()
 
 # async wrapper to run the agent
+import ast
+import re
+
+ACTIVITY_STATES = (
+    "Running",
+    "Working",
+    "Thinking",
+    "Delegating",
+    "Cooking",
+)
+
+def format_todo_list(text: str) -> str:
+    """Safely extracts and formats a LangGraph todo/checklist representation into a beautiful UI checklist."""
+    try:
+        # Find the bracketed list portion of the text
+        start_idx = text.find('[')
+        end_idx = text.rfind(']')
+        if start_idx != -1 and end_idx != -1 and start_idx < end_idx:
+            candidate = text[start_idx:end_idx+1]
+            # Safely evaluate the python literal string into a list of dicts
+            data = ast.literal_eval(candidate)
+            if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and "content" in data[0]:
+                formatted = []
+                for item in data:
+                    content = item.get("content", "")
+                    status = item.get("status", "pending")
+                    if status == "completed" or status == "done":
+                        icon = "✅ [strike green]Completed[/strike green]"
+                    elif status == "in_progress":
+                        icon = "🔥 [bold yellow]In Progress[/bold yellow]"
+                    else:
+                        icon = "💤 [dim]Pending[/dim]"
+                    formatted.append(f"  {icon} {content}")
+                return "\n".join(formatted)
+    except Exception:
+        pass
+    return ""
+
+def _is_empty_tool_value(value) -> bool:
+    """Return True for streaming placeholders that should not be rendered."""
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return value.strip() in {"", "{}", "[]", "null"}
+    if isinstance(value, (dict, list, tuple, set)):
+        return len(value) == 0
+    return False
+
+def _normalize_tool_call(tool_call):
+    """Extract a complete, displayable tool call from provider-specific stream data."""
+    if not isinstance(tool_call, dict) or not tool_call:
+        return None
+
+    name = tool_call.get("name")
+    args = tool_call.get("args")
+
+    if _is_empty_tool_value(name):
+        return None
+
+    name = str(name).strip()
+    if name in {"{}", "[]"}:
+        return None
+
+    if isinstance(args, str):
+        stripped_args = args.strip()
+        if stripped_args.startswith("{") and stripped_args.endswith("}"):
+            try:
+                args = json.loads(stripped_args)
+            except json.JSONDecodeError:
+                args = stripped_args
+        else:
+            args = stripped_args
+
+    if _is_empty_tool_value(args):
+        return None
+
+    return name, args
+
+def _format_tool_status(tool_name: str, tool_args) -> str:
+    if tool_name == "task":
+        if isinstance(tool_args, dict):
+            subagent = (
+                tool_args.get("subagent_type")
+                or tool_args.get("agent")
+                or tool_args.get("name")
+            )
+            description = tool_args.get("description") or tool_args.get("task")
+            target = f" [bold cyan]{subagent}[/bold cyan]" if subagent else ""
+            detail = f": {description}" if description else ""
+            return f"🤝 [bold yellow]Delegating task to{target}[/bold yellow]{detail}"
+        return f"🤝 [bold yellow]Delegating task[/bold yellow]: {tool_args}"
+
+    if isinstance(tool_args, dict):
+        args_text = json.dumps(tool_args)
+    else:
+        args_text = str(tool_args)
+
+    return f"🔧 Running tool: {tool_name} {args_text}"
+
+# async wrapper to run the agent
 async def runner(agent, user_input: str, config: dict):
     full_response_content = ""
+    active_node = "Master Orchestrator"
+    tool_calls_status = []  # List of status logs
+    active_checklist = ""  # Beautifully formatted active todo checklist
     
-    console.rule("[bold blue]Blacksmith[/bold blue]")
+    # console.rule("[bold red]Forging Plan & Execution[/bold red]")
     
-    # Initial "thinking" state
-    display_group = Group(Panel(Spinner("dots", text="Thinking...", style="yellow"), border_style="blue"))
-    
-    with Live(display_group, refresh_per_second=10, console=console) as live:
+    def render_display():
+        parts = []
+        
+        # 1. Render active todo checklist if available
+        if active_checklist:
+            parts.append(Panel(
+                active_checklist,
+                title="📋 [bold gold1]Forging Checklist[/bold gold1]",
+                border_style="gold1",
+                expand=True
+            ))
+        
+        # 2. Render tool execution and sub-agent delegation history (keep last 5 logs to avoid spam)
+        if tool_calls_status:
+            trimmed_logs = tool_calls_status[-5:]
+            tool_lines = "\n".join(trimmed_logs)
+            parts.append(Panel(
+                tool_lines, 
+                title="⚙️ [bold orange3]Forge Operations Log[/bold orange3]", 
+                border_style="orange3", 
+                expand=True
+            ))
+            
+        # 3. Render streamed orchestrator response if there is any
+        if full_response_content:
+            parts.append(Panel(
+                Markdown(full_response_content),
+                title="📝 [bold green]Blacksmith AI[/bold green]",
+                border_style="green",
+                expand=True
+            ))
+            
+        # 4. Render current status / thinking spinner at the bottom
+        activity = ACTIVITY_STATES[int(time.monotonic() * 0.1) % len(ACTIVITY_STATES)]
+        status_text = f"{activity}..."
+        parts.append(Panel(
+            Spinner("dots", text=status_text, style="orange3"),
+            border_style="dim"
+        ))
+        
+        return Group(*parts)
+        
+    with Live(render_display(), refresh_per_second=10, console=console, transient=True) as live:
         async for chunk in agent.astream({'messages': [HumanMessage(user_input)]}, config=config, stream_mode='messages'):
-            # LangGraph 'messages' mode yields (BaseMessage, dict) tuples
-            if isinstance(chunk, tuple) and len(chunk) >= 1:
-                msg = chunk[0]
-                if hasattr(msg, "content") and msg.content:
-                    full_response_content += msg.content
-                    live.update(Markdown(full_response_content))
-            # Fallback for other stream modes or direct message objects
-            elif hasattr(chunk, "content") and chunk.content:
-                full_response_content += chunk.content
-                live.update(Markdown(full_response_content))
+            # Unpack chunk tuple (BaseMessage, metadata)
+            if isinstance(chunk, tuple) and len(chunk) >= 2:
+                msg, metadata = chunk
+            else:
+                msg = chunk
+                metadata = {}
+                
+            # Filter standard text content streaming - ONLY show master orchestrator output to prevent duplicates!
+            is_orchestrator = True  # Safe fallback if metadata is empty
+            if metadata:
+                is_orchestrator = metadata.get("lc_agent_name") == "orchestrator_agent"
+            
+            # Update active node status from metadata
+            if metadata:
+                node_name = metadata.get("lc_agent_name") or metadata.get("langgraph_node") or ""
+                if node_name == "orchestrator_agent":
+                    new_node = "Master Orchestrator"
+                elif "recon" in node_name.lower():
+                    new_node = "Reconnaissance Agent"
+                elif "exploit" in node_name.lower():
+                    new_node = "Exploit Agent"
+                elif "scan" in node_name.lower():
+                    new_node = "Scan & Enum Agent"
+                elif "vuln" in node_name.lower():
+                    new_node = "Vulnerability Mapping Agent"
+                else:
+                    new_node = node_name.replace("_", " ").title()
+                    
+                if new_node != active_node:
+                    active_node = new_node
+                    status_line = f"🤝 [bold yellow]Delegating task to:[/bold yellow] [bold cyan]{active_node}[/bold cyan]"
+                    if status_line not in tool_calls_status:
+                        tool_calls_status.append(status_line)
+                    live.update(render_display())
     
-    # Final cleanup: The Live display is gone, we print the final rendered Markdown once.
-    if not full_response_content:
-        console.print("[bold red]Error:[/bold red] No response received from agent.")
+
+            if hasattr(msg, "tool_calls") and msg.tool_calls:
+                for tc in msg.tool_calls:
+
+                    normalized_tool_call = _normalize_tool_call(tc)
+                    if not normalized_tool_call:
+                        continue
+
+                    t_name, t_args = normalized_tool_call
+                    status_line = _format_tool_status(t_name, t_args)
+
+                    if status_line not in tool_calls_status:
+                        tool_calls_status.append(status_line)
+
+                live.update(render_display())
+            
+            # Check for ToolMessage (meaning tool call finished)
+            msg_class = msg.__class__.__name__
+            if msg_class == "ToolMessage" or getattr(msg, "type", "") == "tool":
+                t_name = getattr(msg, "name", "tool")
+                status_line = f"✅ [bold green]Tool completed:[/bold green] [bold cyan]{t_name}[/bold cyan]"
+                if status_line not in tool_calls_status:
+                    tool_calls_status.append(status_line)
+                
+                # Check if the tool output contains a todo list update and render it beautifully
+                if hasattr(msg, "content") and msg.content:
+                    extracted_todo = format_todo_list(msg.content)
+                    if extracted_todo:
+                        active_checklist = extracted_todo
+                        
+                live.update(render_display())
+                
+            # Accumulate content ONLY for the orchestrator to keep output clean and avoid duplicates
+            if is_orchestrator and hasattr(msg, "content") and msg.content:
+                full_response_content += msg.content
+                live.update(render_display())
+                
+    # Final cleanup: Print clean final report
+    if full_response_content:
+        console.print()
+        console.print(Markdown(full_response_content))
+    else:
+        console.print("[bold green]Execution completed successfully.[/bold green]")
     console.rule(style="dim")
 
 def main():
@@ -183,8 +389,23 @@ def main():
 
     session = PromptSession(history=FileHistory('.blacksmith_history'))
 
-    console.print("\n[bold red]----------------------- Welcome to Blacksmith -----------------------------[/bold red]")
-    console.print("[bold red]............................................................................[/bold red]")
+    banner = """
+[bold orange3]██████╗ ██╗      █████╗  ██████╗██╗  ██╗███████╗███╗   ███╗██╗████████╗██╗  ██╗[/bold orange3]
+[bold orange3]██╔══██╗██║     ██╔══██╗██╔════╝██║ ██╔╝██╔════╝████╗ ████║██║╚══██╔══╝██║  ██║[/bold orange3]
+[bold red]██████╔╝██║     ███████║██║     █████╔╝ ███████╗██╔████╔██║██║   ██║   ███████║[/bold red]
+[bold red]██╔══██╗██║     ██╔══██║██║     ██╔═██╗ ╚════██║██║╚██╔╝██║██║   ██║   ██╔══██║[/bold red]
+[bold gold1]██████╔╝███████╗██║  ██║╚██████╗██║  ██╗███████║██║ ╚═╝ ██║██║   ██║   ██║  ██║[/bold gold1]
+[bold gold1]╚══════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝   ╚═╝   ╚═╝  ╚═╝[/bold gold1]
+"""
+    subtitle_panel = Panel(
+        "[bold yellow]Forging secure systems through pressure and precision.[/bold yellow]\n"
+        "[dim]Open Platform for Autonomous Security Assessments[/dim]",
+        border_style="red",
+        expand=False
+    )
+
+    console.print(banner)
+    console.print(subtitle_panel)
     console.print("[italic]Type /help for commands, /exit to quit.[/italic]\n")
 
     while True:
@@ -206,9 +427,9 @@ def main():
                 elif command == '/clear':
                     # This clears the display, not the agent's memory
                     console.clear()
-                    console.print("[bold red]----------------------- Welcome to Blacksmith -----------------------------[/bold red]")
-                    console.print("[bold red]............................................................................[/bold red]")
-                    console.print("Type /help for commands, /exit to quit.\n")
+                    console.print(banner)
+                    console.print(subtitle_panel)
+                    console.print("[italic]Type /help for commands, /exit to quit.[/italic]\n")
                 elif command == '/reset':
                     convo_id = str(uuid4())[:8] + "-" + datetime.now().strftime("%Y%m%d%H%M%S")
                     config = {'configurable': {'thread_id': f'{convo_id}'}}
